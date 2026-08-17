@@ -59,28 +59,30 @@ def _fmt(v) -> str:
     return str(v)
 
 
-def print_account(user_info: dict, detail: dict) -> None:
+def print_account(info: dict) -> None:
     print(f"\n{'=' * 60}")
     print("  广州燃气账户当前状态")
     print(f"{'=' * 60}")
-    user_no = user_info.get("userNo") or user_info.get("userno") or detail.get("userno")
-    print(f"  用户编号: {_fmt(user_no)}")
-    print(f"  户名: {_fmt(user_info.get('userName') or user_info.get('username'))}")
-    print(f"  地址: {_fmt(user_info.get('address') or user_info.get('userAddr'))}")
+    print(f"  用户编号: {_fmt(info.get('userNo'))}")
+    print(f"  户名: {_fmt(info.get('userName'))}")
+    print(f"  地址: {_fmt(info.get('userAddress'))}")
+    print(f"  燃气公司: {_fmt(info.get('bmmc'))}")
     print(f"{'=' * 60}")
 
     rows = [
-        ("账户余额(元)", detail.get("dqye")),
-        ("欠费状态", detail.get("feeFlag")),
-        ("欠费金额(元)", detail.get("qfje")),
-        ("阶梯周期用气量(m³)", detail.get("jtzqyl") or detail.get("ladderUsed")),
-        ("阶梯周期", detail.get("jtzq") or detail.get("billingCycle")),
-        ("上次抄表读数", detail.get("lastRecordWatchNum")),
-        ("上次抄表日期", detail.get("lastRecordWatchDate")),
-        ("最近充值金额(元)", detail.get("czje") or detail.get("lastChargeAmount")),
-        ("最近充值时间", detail.get("czsj") or detail.get("lastChargeTime")),
-        ("表具状态", detail.get("bjzt") or detail.get("meterStatus")),
-        ("表号", detail.get("bh") or detail.get("meterNo")),
+        ("表类型", info.get("blx")),
+        ("表型号", info.get("rqb_ms")),
+        ("表状态", info.get("rqbztdes")),
+        ("账户余额(元)", info.get("dqye")),
+        ("欠费状态", info.get("feeFlag")),
+        ("欠费金额(元)", info.get("feeMoney")),
+        ("阶梯周期用量(m³)", info.get("jieti_amount_benci")),
+        ("阶梯周期", info.get("jieti_interval")),
+        ("上次抄表读数", info.get("lastRecordWatchNum")),
+        ("上次抄表日期", info.get("lastRecordWatchDate")),
+        ("缴费方式", info.get("feeWay")),
+        ("安检日期", info.get("safeInspectDate")),
+        ("安检结果", info.get("safeInspectHas")),
     ]
     print(f"{'项目':<22}{'值':>36}")
     print("-" * 60)
@@ -111,20 +113,28 @@ def main() -> None:
             if args.json:
                 print("user_info 原始:", json.dumps(user_info, ensure_ascii=False, indent=2))
             sys.exit("未能从用户信息中提取 userNo，请用 --json 查看原始响应")
-        detail = client.get_gas_detail(user_no)
     except GuangzhouGasAuthError as e:
         sys.exit(f"认证失败: {e}（凭证可能已过期，请重新抓包获取）")
     except GuangzhouGasAPIError as e:
         sys.exit(f"接口错误: {e}")
 
+    detail = {}
+    try:
+        detail = client.get_gas_detail(user_no)
+    except GuangzhouGasAPIError as e:
+        print(f"[提示] 燃气表详情接口不可用: {e}（使用基础用户信息展示）")
+
+    info = {**user_info, **detail}
+
     if args.json:
         print("\n--- user_info ---")
         print(json.dumps(user_info, ensure_ascii=False, indent=2))
-        print("\n--- gas_detail ---")
-        print(json.dumps(detail, ensure_ascii=False, indent=2))
+        if detail:
+            print("\n--- gas_detail ---")
+            print(json.dumps(detail, ensure_ascii=False, indent=2))
         return
 
-    print_account(user_info, detail)
+    print_account(info)
 
     if args.month:
         import datetime as dt
