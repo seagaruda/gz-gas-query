@@ -12,8 +12,13 @@ from typing import Any
 import requests
 
 from .const import (
+    API_ARREARAGE_URL,
+    API_BILL_DETAIL_URL,
+    API_BILL_LIST_URL,
     API_GAS_DETAIL_URL,
     API_LOGIN_URL,
+    API_METER_READING_LIST_URL,
+    API_PAY_LIST_URL,
     API_USER_INFO_URL,
     DEFAULT_HEADERS,
 )
@@ -132,17 +137,77 @@ class GuangzhouGasClient:
         meter = self._extract_record(data.get("rqbList"), "rqbList")
         return {**{k: v for k, v in data.items() if k != "rqbList"}, **meter}
 
-    def get_monthly_bill(self, user_no: str, year: int, month: int) -> dict[str, Any]:
-        """查询月度账单（预留扩展点）
-
-        现有广州燃气小程序接口未暴露按月历史账单接口。
-        若你通过抓包找到了月度账单接口（URL/参数/响应格式），
-        请在此方法内实现，并在 const.py 添加对应 URL。
-        """
-        raise NotImplementedError(
-            "月度账单接口尚未实现。现有广州燃气小程序接口仅提供当前余额/用量，"
-            "无按月历史账单。请抓包找到月度账单接口后补充此方法。"
+    def get_bill_list(self, user_no: str, page: int = 1, rows: int = 20) -> dict[str, Any]:
+        """获取用气账单列表"""
+        if not self._token:
+            self.login()
+        resp = self._request(
+            API_BILL_LIST_URL,
+            {"userno": user_no, "page": str(page), "rows": str(rows)},
+            token=self._token,
         )
+        data = resp.get("data")
+        if not isinstance(data, Mapping):
+            raise GuangzhouGasDataError("账单列表响应无 data 对象")
+        return dict(data)
+
+    def get_bill_detail(self, user_no: str, fyjlid: str) -> dict[str, Any]:
+        """获取用气账单详情"""
+        if not self._token:
+            self.login()
+        resp = self._request(
+            API_BILL_DETAIL_URL,
+            {"userno": user_no, "fyjlid": fyjlid},
+            token=self._token,
+        )
+        data = resp.get("data")
+        if not isinstance(data, Mapping):
+            raise GuangzhouGasDataError("账单详情响应无 data 对象")
+        return dict(data)
+
+    def get_meter_reading_list(self, user_no: str, page: int = 1, rows: int = 20) -> dict[str, Any]:
+        """获取抄表记录列表"""
+        if not self._token:
+            self.login()
+        resp = self._request(
+            API_METER_READING_LIST_URL,
+            {"userno": user_no, "page": str(page), "rows": str(rows)},
+            token=self._token,
+        )
+        data = resp.get("data")
+        if not isinstance(data, Mapping):
+            raise GuangzhouGasDataError("抄表记录响应无 data 对象")
+        return dict(data)
+
+    def get_arrearage(self, user_no: str) -> dict[str, Any]:
+        """获取欠费信息"""
+        if not self._token:
+            self.login()
+        resp = self._request(
+            API_ARREARAGE_URL,
+            {"userno": user_no},
+            token=self._token,
+        )
+        data = resp.get("data")
+        if not isinstance(data, Mapping):
+            raise GuangzhouGasDataError("欠费响应无 data 对象")
+        return dict(data)
+
+    def get_pay_list(self, user_no: str, year: int) -> list[dict[str, Any]]:
+        """获取缴费记录列表"""
+        if not self._token:
+            self.login()
+        resp = self._request(
+            API_PAY_LIST_URL,
+            {"userNo": user_no, "year": str(year)},
+            token=self._token,
+        )
+        data = resp.get("data")
+        if data is None:
+            return []
+        if isinstance(data, list):
+            return [dict(item) for item in data if isinstance(item, Mapping)]
+        raise GuangzhouGasDataError("缴费记录响应格式异常")
 
     def dump(self) -> dict[str, Any]:
         return {

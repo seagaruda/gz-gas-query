@@ -6,7 +6,7 @@
 
 ## 中文
 
-查询**广州燃气**个人账户的当前状态：燃气表余额、阶梯周期用气量、欠费、上次抄表读数、充值记录等。月度历史账单为预留扩展点（见下）。
+查询**广州燃气**个人账户的当前状态与历史记录：燃气表余额、阶梯周期用气量、欠费、上次抄表读数，以及**用气账单列表**、**账单详情**、**抄表记录**、**欠费信息**、**缴费记录**。
 
 > ⚠️ **免责声明**：本项目通过广州燃气微信小程序后端接口（`wxxcx.gzgas.com`）获取数据，**非官方公开 API**，与广州燃气集团有限公司无关。仅供个人查询本人绑定账户，请勿用于商业用途或大规模抓取。使用风险自负。
 
@@ -16,7 +16,7 @@
 |---|---|---|
 | 接口端 | 网页端 95598.csg.cn | 微信小程序 wxxcx.gzgas.com |
 | 登录 | 手机号+短信 | 微信抓包凭证 unionid/acceptKey/nickname |
-| 月度账单 | ✅ 有 | ❌ 现接口无，预留扩展点 |
+| 月度账单 | ✅ 有 | ✅ 用气账单列表+详情 |
 
 ### 功能
 
@@ -24,8 +24,12 @@
 - 阶梯周期用气量、阶梯周期
 - 上次抄表读数/日期
 - 最近充值金额/时间、表具状态、表号
+- **用气账单列表**（按抄表周期，含用量/金额/账单编号）
+- **账单详情**（含单价、上下次读数、缴费状态/日期）
+- **抄表记录列表**（含抄表日期、上次/本次读数、用量、金额）
+- **欠费信息**（欠费期数、待扣金额、违约金）
+- **缴费记录**（按年查询）
 - 原始 JSON 输出（便于发现字段）
-- 月度账单接口预留（`get_monthly_bill`，待抓包补全）
 
 ### 依赖
 
@@ -105,21 +109,17 @@ python3 query_gas.py
 ### 用法
 
 ```bash
-python3 query_gas.py                 # 查询当前账户状态
-python3 query_gas.py --json          # 输出原始 JSON（查看全部字段）
-python3 query_gas.py --config my.json  # 指定凭证文件
-python3 query_gas.py --month 7       # 月度账单（预留，目前会提示未实现）
+python3 query_gas.py                          # 查询当前账户状态
+python3 query_gas.py --bill                   # 用气账单列表
+python3 query_gas.py --detail <账单编号>       # 账单详情（编号从 --bill 获取）
+python3 query_gas.py --meter                  # 抄表记录列表
+python3 query_gas.py --arrearage              # 欠费信息
+python3 query_gas.py --pay --year 2026        # 缴费记录
+python3 query_gas.py --bill --meter           # 可组合多个查询
+python3 query_gas.py --json                   # 输出原始 JSON
+python3 query_gas.py --config my.json         # 指定凭证文件
 ```
 
-### 月度账单扩展点
-
-现有广州燃气小程序接口仅返回**当前**余额/用量，无按月历史账单。若你抓包找到了月度账单接口，实现步骤：
-
-1. 在 `gz_gas_client/const.py` 添加接口 URL
-2. 在 `gz_gas_client/__init__.py` 的 `get_monthly_bill` 方法内实现请求与解析
-3. `python3 query_gas.py --year 2026 --month 7` 即可调用
-
-欢迎以 PR 形式贡献。
 
 ### 隐私与安全
 
@@ -140,7 +140,7 @@ MIT
 
 ## English
 
-Query **Guangzhou Gas** residential account current status: meter balance, tiered-period usage, arrears, last meter reading, recharge records, etc. Monthly historical bills are a reserved extension point (see below).
+Query **Guangzhou Gas** residential account status and history: meter balance, tiered-period usage, arrears, last meter reading, plus **bill list**, **bill detail**, **meter reading records**, **arrearage info**, and **payment records**.
 
 > ⚠️ **Disclaimer**: This project uses the Guangzhou Gas WeChat mini-program backend (`wxxcx.gzgas.com`), which is **NOT an official public API** and is not affiliated with Guangzhou Gas Group. Use only to query your own bound account. Do not use for commercial purposes or large-scale scraping. Use at your own risk.
 
@@ -150,7 +150,7 @@ Query **Guangzhou Gas** residential account current status: meter balance, tiere
 |---|---|---|
 | Endpoint | web 95598.csg.cn | WeChat mini-program wxxcx.gzgas.com |
 | Login | phone + SMS | WeChat-captured unionid/acceptKey/nickname |
-| Monthly bill | ✅ available | ❌ not in current API, reserved extension |
+| Monthly bill | ✅ available | ✅ bill list + detail |
 
 ### Features
 
@@ -158,8 +158,12 @@ Query **Guangzhou Gas** residential account current status: meter balance, tiere
 - Tiered-period usage, billing cycle
 - Last meter reading value/date
 - Last recharge amount/time, meter status, meter number
+- **Bill list** (by meter-reading cycle, with usage/amount/bill ID)
+- **Bill detail** (unit price, prev/next reading, payment status/date)
+- **Meter reading records** (date, prev/next reading, usage, amount)
+- **Arrearage info** (arrears periods, pending deduction, penalty)
+- **Payment records** (by year)
 - Raw JSON output (to discover fields)
-- Monthly bill interface reserved (`get_monthly_bill`, pending capture)
 
 ### Requirements
 
@@ -239,21 +243,16 @@ python3 query_gas.py
 ### Usage
 
 ```bash
-python3 query_gas.py                 # query current account status
-python3 query_gas.py --json          # raw JSON output (inspect all fields)
-python3 query_gas.py --config my.json  # specify credential file
-python3 query_gas.py --month 7       # monthly bill (reserved, currently NotImplemented)
+python3 query_gas.py                          # query current account status
+python3 query_gas.py --bill                   # bill list
+python3 query_gas.py --detail <bill_id>       # bill detail (ID from --bill)
+python3 query_gas.py --meter                  # meter reading records
+python3 query_gas.py --arrearage              # arrearage info
+python3 query_gas.py --pay --year 2026        # payment records
+python3 query_gas.py --bill --meter           # combine multiple queries
+python3 query_gas.py --json                   # raw JSON output
+python3 query_gas.py --config my.json         # specify credential file
 ```
-
-### Monthly bill extension point
-
-The current Guangzhou Gas mini-program API returns only **current** balance/usage, no monthly history. If you capture a monthly-bill endpoint:
-
-1. Add the URL to `gz_gas_client/const.py`
-2. Implement the request/parsing in `get_monthly_bill` in `gz_gas_client/__init__.py`
-3. Run `python3 query_gas.py --year 2026 --month 7`
-
-PRs welcome.
 
 ### Privacy & security
 

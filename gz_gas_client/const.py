@@ -4,6 +4,11 @@ API_BASE_URL = "https://wxxcx.gzgas.com/ydeq/min"
 API_LOGIN_URL = f"{API_BASE_URL}/login/getToken.action"
 API_USER_INFO_URL = f"{API_BASE_URL}/bind/getUserByShowIndex.action"
 API_GAS_DETAIL_URL = f"{API_BASE_URL}/order/getBiaoDetail.action"
+API_BILL_LIST_URL = f"{API_BASE_URL}/ebill/getBillList.action"
+API_BILL_DETAIL_URL = f"{API_BASE_URL}/ebill/getBillDetail.action"
+API_METER_READING_LIST_URL = f"{API_BASE_URL}/ebill/getCbList.action"
+API_ARREARAGE_URL = f"{API_BASE_URL}/order/getArrearage.action"
+API_PAY_LIST_URL = f"{API_BASE_URL}/order/getPayList.action"
 
 DEFAULT_HEADERS = {
     "User-Agent": (
